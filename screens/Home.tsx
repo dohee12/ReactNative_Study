@@ -1,3 +1,4 @@
+import { useNavigation } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import {
   Alert,
@@ -8,20 +9,23 @@ import {
   View,
 } from "react-native";
 
+// 1. onClick (버튼)
+// 1-a. function 키워드
+// input = params = 매개변수 (optional)
+// output = return = 반환 (required)
+function fun() {}
+// 1-b. arrow function
+// let : 재선언 가능
+// const : 재선언 불가능
+// Logic
 export default () => {
-  // Logic Process
-  // 1. onClick (버튼)
-  // 1-a. function 키워드
-  // input = params = 매개변수 (optional)
-  // output = return = 반환 (required)
-  function fun() {}
-  // 1-b. arrow function
-  // let : 재선언 가능
-  // const : 재선언 불가능
-  // Logic
-  const onClick = () => {
-    // 알림창
-    Alert.alert("버튼 클릭됨");
+  // Hook : 페이지 이동을 위한 navigation Hook
+  const navi = useNavigation();
+
+  // Header Button을 눌렀을 때 페이지 이동
+  const goToScreen = () => {
+    // 특정 Stack의 Screen으로 이동
+    navi.navigate("CreatePost");
   };
 
   // UI Page Rendering
@@ -30,7 +34,7 @@ export default () => {
       <View style={{ paddingTop: 20 }}>
         <View style={styles.header}>
           <Text>InstaDaelim</Text>
-          <Button onPress={onClick} title="create" />
+          <Button onPress={goToScreen} title="create" />
         </View>
         <Text>hello word</Text>
       </View>
