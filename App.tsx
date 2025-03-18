@@ -1,5 +1,10 @@
-import Home from "./screens/Home";
+import { NavigationContainer } from "@react-navigation/native";
+import MainStack from "./stacks/MainStack";
 
 export default () => {
-  return <Home />;
+  return (
+    <NavigationContainer>
+      <MainStack />
+    </NavigationContainer>
+  );
 };
