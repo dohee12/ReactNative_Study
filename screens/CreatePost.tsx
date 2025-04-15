@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import {
   Alert,
   Button,
@@ -15,23 +15,56 @@ import {
 import styled from "styled-components";
 import LoadingScreen from "./LoadingScreen";
 import * as MediaLibrary from "expo-media-library";
+import { useNavigation } from "@react-navigation/native";
 
 // styled-component를 통해 css 컴포넌트를 생성 / 관리
 const Container = styled(View)`
-  flex: 1;
+  flex: 1; /* 화면 전체를 차지하도록 설정 */
 `;
-const SelectedPhotoScroll = styled(ScrollView)``;
-const SelectedPhoto = styled(Image)``;
+const SelectedPhotoScroll = styled(
+  ScrollView
+)``; /*선택된 사진을 가로로 스크롤할 수 있는 영역*/
+const SelectedPhoto = styled(Image)``; /*선택된 사진을 표시하는 컴포넌트*/
 
-// Photo from Gallery
+// 갤러리에서 불러온 사진을 표시하는 컴포넌트
 const Photo = styled(TouchableOpacity)`
-  width: 100px;
-  height: 100px;
+  width: 100px; /*사진의 너비*/
+  height: 100px; /*사진의 너비*/
 `;
 const PhotoImg = styled(Image)`
+  width: 100%; /*사진의 너비를 부모 요소에 맞춤*/
+  height: 100%; /*사진의 높이를 부모 요소에 맞춤*/
+`;
+const PhotoSelectCircle = styled(View)`
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: yellow;
+  position: absolute;
+  margin: 5px;
+`; /*사진 선택 버튼*/
+const PhotoSelectIcon = styled(Image)`
   width: 100%;
   height: 100%;
-`;
+`; /*사진 선택 아이콘*/
+
+const MenuTitle = styled(Text)`
+  color: black;
+  font-size: 20px;
+  font-weight: bold;
+  margin: 10px;
+`; /*메뉴 제목 스타일*/
+
+// Header Button Style
+const NextHeaderBtn = styled(TouchableOpacity)`
+  padding: 0px 10px;
+  justify-content: center;
+`; /*헤더 버튼 스타일*/
+const NextHeaderTitle = styled(Text)`
+  color: dodgerblue;
+  font-weight: 700;
+  font-size: 20px;
+`; /*헤더 버튼 텍스트 스타일*/
 
 // 한 줄에 띄우고 싶은 갤러리 사진 개수
 const numColumn = 3;
@@ -45,13 +78,27 @@ export default () => {
   const [assets, setAssets] = useState<DummyPhotoType[]>([]);
   // State 2 : 내가 선택한 사진'들'
   const [selectedPhotos, setSelectedPhotos] = useState<DummyPhotoType[]>([]);
-  // Hook : 내 디바이스의 가로/세로 크기를 가져온다
+  // Hook : 디바이스의 화면 크기를 가져옴 (가로/세로 크기)
   const { width: WIDTH } = useWindowDimensions();
+  // Hook : Screen 이동 관련 navigationHook
+  const navi = useNavigation();
 
   // FlatList에 띄어줄 Item(Photo)의 크기
   const itemSize = WIDTH / numColumn;
   // SelectedPhotoScrollView에 띄어줄 Item(SelectedPhoto)의 크기
   const photoSize = WIDTH * 0.75;
+  // SelectedPhotoScroll 안에 업로드 이미지 여백
+  const paddingLeft = (WIDTH - photoSize) / 2;
+
+  // 사진을 선택했는지 여부
+  const isSelected = (photo: DummyPhotoType): boolean => {
+    // 선택한 사진 리스트(selectedPhotos)안에서 사진 존재 확인
+    const findIndex = selectedPhotos.findIndex(
+      (asset) => asset.id === photo.id
+    );
+    // findIndex 안의 값에 따라 true 혹은 false
+    return findIndex >= 0 ? true : false;
+  };
 
   // 내 갤러리에서 사진을 가져오는 함수
   // a. 페이지가 생성될 때 1번
@@ -85,9 +132,29 @@ export default () => {
 
   // 불러온 사진들 중에서 업로드하고 싶은 사진 선택 (id 값으로 구분)
   const onSelectPhoto = (photo: DummyPhotoType) => {
+    // 조건 : 이미 선택한 사진인기??
+    // - 선택한 사진이 'selectedPhotos'안에 존재하는지?
+    const findIndex = selectedPhotos.findIndex(
+      (asset) => asset.id === photo.id
+    );
+
+    // 2. 선택한 사진을 누른 경우 -> 해제
+    if (findIndex >= 0) {
+      // 2-1. selectedPhotos 안에서 n번째 요소 제거
+      const removedPhotoList = selectedPhotos;
+      const deleteCount = 1;
+      removedPhotoList.splice(findIndex, deleteCount); // splice(시작인덱스, 삭제할개수)
+      // 2-2. 제거한 new 리스트로 selectedPhotos 갱신
+      setSelectedPhotos([...removedPhotoList]);
+    }
+    // 1. 선택하지 않은 사진을 누른 경우 -> 추가
+    else {
+      // 1-1. selectedPhotos 리스트에 선택한 사진 추가
+      setSelectedPhotos([...selectedPhotos, photo]);
+    }
+
     // 1. 선택하지 않은 사진 누른 경우 -> 추가
-    // 1-1. selectedPhotos 리스트에 선택한 사진 추가
-    setSelectedPhotos([...selectedPhotos, photo]);
+
     // 1-2. 기존의 선택한 사진들 리스트 가져오기
     // const photolist = selectedPhotos;
     // 1.3. 리스트(1-1)에서 선택한 사진 추가
@@ -99,7 +166,23 @@ export default () => {
 
   // Hook : 컴포넌트 생성 시 '1번만' 실행되는 lifecycle 함수
   useEffect(() => {
-    getMyPhotos();
+    getMyPhotos(); // 갤러리에서 사진 가져오기기
+  }, []);
+
+  // Hook : 컴포넌트 생성 시 '1번만' 실행되는 lifecycle 함수
+  // useNaivgation과 함께 Header style을 수정하기 위해 사용
+  useLayoutEffect(() => {
+    // navi, 화면 이동 함수
+    // - uploadPost에 photo 전달
+    const goToNext = () => navi.navigate("UploadPost"); // UploadPost로 이동
+    // Stack Navigation 옵션에 접근
+    navi.setOptions({
+      headerRight: () => (
+        <NextHeaderBtn onPress={goToNext}>
+          <NextHeaderTitle>Next</NextHeaderTitle>
+        </NextHeaderBtn>
+      ),
+    });
   }, []);
 
   // Page UI Rendering
@@ -113,32 +196,48 @@ export default () => {
       <SelectedPhotoScroll
         horizontal={true} // 가로 스크롤
         showsHorizontalScrollIndicator={false} // 스크롤바 숨기기
-        style={{ width: WIDTH, height: WIDTH }}
-        contentContainerStyle={{ gap: 5 }}
+        style={{ width: WIDTH, height: WIDTH }} // ScrollView 크기 설정정
+        pagingEnabled={true} // 페이지 단위로 스크롤
+        contentContainerStyle={{ gap: 5, paddingLeft: paddingLeft }} // 사진 간격 설정정
       >
         {
           // 내가 선택한 사진들이 있다면, 하나씩 SelectedPhoto 컴포넌트를 통해 Rendering
           selectedPhotos.map((photo) => (
             <SelectedPhoto
-              key={photo.id}
-              source={{ uri: photo.uri }}
-              style={{ width: photoSize, height: photoSize }}
+              key={photo.id} // 고유 키 설정
+              source={{ uri: photo.uri }} // 사진 URI 설정
+              style={{ width: photoSize, height: photoSize }} // 사진 크기 설정정
             />
           ))
         }
       </SelectedPhotoScroll>
+      <MenuTitle>최신 순</MenuTitle>
       {/* B.FlatList를 활용한 갤러리에서 불러올 사진들을 보여주는 영역 */}
       <FlatList
-        numColumns={numColumn}
-        data={assets} /** 실제 Data */
-        renderItem={({ item }) => (
-          <Photo
-            onPress={() => onSelectPhoto(item)}
-            style={{ width: itemSize, height: itemSize }}
-          >
-            <PhotoImg source={{ uri: item.uri }} />
-          </Photo>
-        )} /** Data를 어떻게 보여줄지 (UI) */
+        numColumns={numColumn} // 한 줄에 표시할 사진 개수수
+        data={assets} //실제 Data
+        renderItem={({ item }) => {
+          // Logic
+          const isSelect = isSelected(item); // 선택한 사진인지 확인
+          // component UI Rendering
+          return (
+            <Photo
+              onPress={() => onSelectPhoto(item)} // 사진 클릭 시 onSelectPhoto 호출
+              style={{ width: itemSize, height: itemSize }}
+              // 사진 크기 설정
+            >
+              <PhotoImg source={{ uri: item.uri }} />
+              {/* 사진 표시 */}
+              {isSelect && (
+                <PhotoSelectCircle>
+                  <PhotoSelectIcon />
+                </PhotoSelectCircle>
+              )}
+              {/* 사진 선택 아이콘 표시 */}
+            </Photo>
+          );
+        }}
+        // Data를 어떻게 보여줄지 (UI)
       />
     </Container>
   );
