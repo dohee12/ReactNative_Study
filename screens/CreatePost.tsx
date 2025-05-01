@@ -16,6 +16,8 @@ import styled from "styled-components";
 import LoadingScreen from "./LoadingScreen";
 import * as MediaLibrary from "expo-media-library";
 import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { MainStackList } from "../stacks/MainStack";
 
 // styled-component를 통해 css 컴포넌트를 생성 / 관리
 const Container = styled(View)`
@@ -81,7 +83,7 @@ export default () => {
   // Hook : 디바이스의 화면 크기를 가져옴 (가로/세로 크기)
   const { width: WIDTH } = useWindowDimensions();
   // Hook : Screen 이동 관련 navigationHook
-  const navi = useNavigation();
+  const navi = useNavigation<NativeStackNavigationProp<MainStackList>>();
 
   // FlatList에 띄어줄 Item(Photo)의 크기
   const itemSize = WIDTH / numColumn;
@@ -90,9 +92,9 @@ export default () => {
   // SelectedPhotoScroll 안에 업로드 이미지 여백
   const paddingLeft = (WIDTH - photoSize) / 2;
 
-  // 사진을 선택했는지 여부
+  // 사진을 선택했는지 여부를 확인하는 함수
   const isSelected = (photo: DummyPhotoType): boolean => {
-    // 선택한 사진 리스트(selectedPhotos)안에서 사진 존재 확인
+    // 선텍힌 사진 리스트(selectedPhotos)에서 해당 사진의 ID를 검색
     const findIndex = selectedPhotos.findIndex(
       (asset) => asset.id === photo.id
     );
@@ -130,15 +132,15 @@ export default () => {
     setLoading(false);
   };
 
-  // 불러온 사진들 중에서 업로드하고 싶은 사진 선택 (id 값으로 구분)
+  // 불러온 사진들 중에서 업로드하고 싶은 사진 선택/해제 (id 값으로 구분)
   const onSelectPhoto = (photo: DummyPhotoType) => {
-    // 조건 : 이미 선택한 사진인기??
+    // 조건 : 선택한 사진이 이미 리스트에 있는지 확인
     // - 선택한 사진이 'selectedPhotos'안에 존재하는지?
     const findIndex = selectedPhotos.findIndex(
       (asset) => asset.id === photo.id
     );
 
-    // 2. 선택한 사진을 누른 경우 -> 해제
+    // 2. 이미 선택된 사진인 경우 -> 리스트에서 제거
     if (findIndex >= 0) {
       // 2-1. selectedPhotos 안에서 n번째 요소 제거
       const removedPhotoList = selectedPhotos;
@@ -147,7 +149,7 @@ export default () => {
       // 2-2. 제거한 new 리스트로 selectedPhotos 갱신
       setSelectedPhotos([...removedPhotoList]);
     }
-    // 1. 선택하지 않은 사진을 누른 경우 -> 추가
+    // 1. 선택하지 않은 사진을 누른 경우 -> 리스트에 추가
     else {
       // 1-1. selectedPhotos 리스트에 선택한 사진 추가
       setSelectedPhotos([...selectedPhotos, photo]);
@@ -172,9 +174,24 @@ export default () => {
   // Hook : 컴포넌트 생성 시 '1번만' 실행되는 lifecycle 함수
   // useNaivgation과 함께 Header style을 수정하기 위해 사용
   useLayoutEffect(() => {
+    // 전달할 데이터
+    const params = {
+      assets: selectedPhotos,
+    };
     // navi, 화면 이동 함수
-    // - uploadPost에 photo 전달
-    const goToNext = () => navi.navigate("UploadPost"); // UploadPost로 이동
+    // - uploadPost에 photo Props(데이터)전달
+    const goToNext = () => {
+      // 방어코드
+      // 만약, 선택한 사진이 없으면 알림창 띄우기
+      if (selectedPhotos.length === 0) {
+        Alert.alert("선택한 사진 없음", "사진을 선택해주세요");
+        return;
+      }
+
+      navi.navigate("UploadPost", {
+        assets: selectedPhotos,
+      }); // UploadPost로 이동
+    };
     // Stack Navigation 옵션에 접근
     navi.setOptions({
       headerRight: () => (
@@ -183,7 +200,7 @@ export default () => {
         </NextHeaderBtn>
       ),
     });
-  }, []);
+  }, [selectedPhotos]);
 
   // Page UI Rendering
   // a. 로딩 중일 때 : loadingScreen
@@ -196,9 +213,14 @@ export default () => {
       <SelectedPhotoScroll
         horizontal={true} // 가로 스크롤
         showsHorizontalScrollIndicator={false} // 스크롤바 숨기기
-        style={{ width: WIDTH, height: WIDTH }} // ScrollView 크기 설정정
-        pagingEnabled={true} // 페이지 단위로 스크롤
-        contentContainerStyle={{ gap: 5, paddingLeft: paddingLeft }} // 사진 간격 설정정
+        style={{ width: WIDTH, height: WIDTH }} // ScrollView 크기 설정
+        contentContainerStyle={{
+          gap: 10,
+          paddingLeft: paddingLeft,
+          alignItems: "center",
+        }} // 사진 간격 설정
+        snapToInterval={photoSize + 10}
+        decelerationRate={"fast"}
       >
         {
           // 내가 선택한 사진들이 있다면, 하나씩 SelectedPhoto 컴포넌트를 통해 Rendering
@@ -206,7 +228,7 @@ export default () => {
             <SelectedPhoto
               key={photo.id} // 고유 키 설정
               source={{ uri: photo.uri }} // 사진 URI 설정
-              style={{ width: photoSize, height: photoSize }} // 사진 크기 설정정
+              style={{ width: photoSize, height: photoSize }} // 사진 크기 설정
             />
           ))
         }
@@ -214,7 +236,7 @@ export default () => {
       <MenuTitle>최신 순</MenuTitle>
       {/* B.FlatList를 활용한 갤러리에서 불러올 사진들을 보여주는 영역 */}
       <FlatList
-        numColumns={numColumn} // 한 줄에 표시할 사진 개수수
+        numColumns={numColumn} // 한 줄에 표시할 사진 개수
         data={assets} //실제 Data
         renderItem={({ item }) => {
           // Logic
@@ -245,7 +267,7 @@ export default () => {
 
 // 가짜(Dummy) 사진 타입
 // 1. type
-type DummyPhotoType = {
+export type DummyPhotoType = {
   id: string;
   uri: string;
 };
