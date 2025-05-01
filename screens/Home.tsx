@@ -8,19 +8,22 @@ import {
   Text,
   View,
 } from "react-native";
+import { MainStackList } from "../stacks/MainStack";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 // 1. onClick (버튼)
 // 1-a. function 키워드
 // input = params = 매개변수 (optional)
-// output = return = 반환 (required)
+// output = return = 반환값 (required)
 function fun() {}
 // 1-b. arrow function
 // let : 재선언 가능
 // const : 재선언 불가능
-// Logic
+
+// Home 컴포넌트 정의의
 export default () => {
   // Hook : 페이지 이동을 위한 navigation Hook
-  const navi = useNavigation();
+  const navi = useNavigation<NativeStackNavigationProp<MainStackList>>();
 
   // Header Button을 눌렀을 때 페이지 이동
   const goToScreen = () => {
@@ -31,28 +34,34 @@ export default () => {
   // UI Page Rendering
   return (
     <SafeAreaView style={styles.container}>
+      {/* 화면 상단 여백을 추가 */}
       <View style={{ paddingTop: 20 }}>
+        {/* 헤더 영역 */}
         <View style={styles.header}>
+          {/* 앱 이름 */}
           <Text>InstaDaelim</Text>
+          {/* "create" 버튼 : 클릭 시 goToScreen 함수 호출 */}
           <Button onPress={goToScreen} title="create" />
         </View>
+        {/* 본문 텍스트 */}
         <Text>hello word</Text>
       </View>
     </SafeAreaView>
   );
 };
 
+// 스타일 정의
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#fff",
+    flex: 1, // 화면 전체를 차지
+    backgroundColor: "#fff", // 배경색을 흰색으로 설정
   },
   header: {
-    height: 50,
-    backgroundColor: "lightgray",
-    flexDirection: "row", // 축의 방향을 변경
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 10,
+    height: 50, // 헤더 높이
+    backgroundColor: "lightgray", // 헤더 배경색
+    flexDirection: "row", // 가로 방향으로 정렬
+    justifyContent: "space-between", // 요소 간의 간격을 통일하게 설정
+    alignItems: "center", // 세로 방향으로 가운데 설정
+    paddingHorizontal: 10, // 좌우 여백 추가
   },
 });
