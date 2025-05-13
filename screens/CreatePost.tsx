@@ -18,6 +18,7 @@ import * as MediaLibrary from "expo-media-library";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MainStackList } from "../stacks/MainStack";
+import HeaderRightBtn from "../components/HeaderRightBtn";
 
 // styled-component를 통해 css 컴포넌트를 생성 / 관리
 const Container = styled(View)`
@@ -194,11 +195,7 @@ export default () => {
     };
     // Stack Navigation 옵션에 접근
     navi.setOptions({
-      headerRight: () => (
-        <NextHeaderBtn onPress={goToNext}>
-          <NextHeaderTitle>Next</NextHeaderTitle>
-        </NextHeaderBtn>
-      ),
+      headerRight: () => <HeaderRightBtn title="Next" onPress={goToNext} />,
     });
   }, [selectedPhotos]);
 
