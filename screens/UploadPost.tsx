@@ -8,6 +8,10 @@ import { useNavigation } from "@react-navigation/native";
 import HeaderRightBtn from "../components/HeaderRightBtn";
 import UploadLoadingScreen from "../components/upload-loading-screen";
 import { AntDesign } from "@expo/vector-icons";
+import { addDoc, collection, LoadBundleTask } from "firebase/firestore";
+import { auth, db, storage } from "../firebaseConfig";
+import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
+import { assetsToBlob } from "../utils/utils";
 
 // styled-components를 사용하여 스타일링된 컴포넌트 생성
 const Container = styled(View)`
@@ -86,7 +90,7 @@ export default ({ route: { params } }: Props) => {
   };
 
   // (비동기형) 데이터를 Server에 업로드
-  const onUpload = () => {
+  const onUpload = async () => {
     // 0. 방어코드 : caption을 작성하지 않은 경우 업로드 불가
     // 1. 필요한 데이터
     // ㄴ a. caption(작성글) / b. photos(선택한사진들)
@@ -96,14 +100,48 @@ export default ({ route: { params } }: Props) => {
       // --- 로딩 시작 ---
       setLoading(true);
       // 서버 업로드 Process
-      // --- 로딩 완료 ---
-      // setLoading(false);
+      // A. firestore => 데이터 저장
+      // 1. 데이터 저장위치 필요 (접근할firestoreDB, 접근할 collection 이름름)
+      const path = collection(db, "posts");
+      // 2. 저장할 데이터 구조화
+      const uploadData = {
+        nickname: auth.currentUser?.displayName, // 현재 로그인한 유저의 닉네임
+        userId: auth.currentUser?.uid, // 현재 로그인한 유저의 ID
+        caption: caption, // 작성한 글
+        createAt: Date.now(), // 업로드 시간
+      };
+      // 3. firestore에 업로드
+      const doc = await addDoc(path, uploadData);
+
+      // B. storage => Media(오디오, 비디오, 사진...)
+      const uploadPhotos = [];
+      // 2. 업로드할 이미지'들' ... for문
+      for (const photo of photos) {
+        // 1. 업로드할 위치(=> storage)
+        // 위치 : posts/업로드유저ID/업로드한DocId/파일이름.확장자
+        const storagePath = `posts/${auth.currentUser?.uid}/${doc.id}/${photo.id}`;
+        const localRef = ref(storage, storagePath);
+        // [pass].. 업로드할 이미지를 변환(Convert)
+        const blob = await assetsToBlob(photo.uri);
+        const task = await uploadBytesResumable(localRef, blob);
+        // 3. Storage에 업로드(with Server)
+        // 3-a. uri 이미지로부터 다운로드
+        const url = await getDownloadURL(task.ref);
+        // 3-b. 받은 이미지를 uploadPhotos에 추가
+        uploadPhotos.push(url);
+      }
+      // for문이 끝나면 Storage 업로드
+
       // 로딩 완료 ==> 정상적으로 서버 업로드 완료료
       // 알림창, 페이지를 홈화면으로 이동
     } catch (error) {
       // 2-b. 오류발생
+      console.error(error);
       // --- 로딩 완료 ---
       // setLoading(false);
+    } finally {
+      // --- 정상 업로드 or 에러 발생 시 어느 경우에도 끝나면 로딩 완료 ---
+      setLoading(false);
     }
   };
 
@@ -113,7 +151,7 @@ export default ({ route: { params } }: Props) => {
     navi.setOptions({
       headerRight: () => <HeaderRightBtn title="Upload" onPress={onUpload} />,
     });
-  }, []);
+  }, [caption]);
 
   return (
     // 화면 렌더링
