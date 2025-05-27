@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { MainStackList } from "../stacks/MainStack";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { auth } from "../firebaseConfig";
 
 // 1. onClick (버튼)
 // 1-a. function 키워드
@@ -46,6 +47,13 @@ export default () => {
         {/* 본문 텍스트 */}
         <Text>hello word</Text>
       </View>
+      {/* 로그아웃 버튼 */}
+      <Button
+        title="Log Out"
+        onPress={async () => {
+          await auth.signOut();
+        }}
+      />
     </SafeAreaView>
   );
 };
