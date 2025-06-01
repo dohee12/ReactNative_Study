@@ -11,7 +11,6 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  Button,
 } from "react-native";
 import styled, { css } from "styled-components";
 import { auth } from "../../firebaseConfig";
@@ -43,6 +42,9 @@ const InputField = styled(View)`
   gap: 10px;
 `;
 const InputCSS = css`
+  border-radius: 5px;
+  background-color: #e9e9e9;
+  font-size: 16px;
   padding: 10px 15px;
 `;
 const UserName = styled(TextInput)`
@@ -70,7 +72,7 @@ const CreateBtnTitle = styled(Text)`
   font-size: 15px;
   font-weight: 400;
 `;
-const Footer = styled(TouchableOpacity)`
+const Footer = styled(View)`
   justify-content: center;
   align-items: center;
 `;
@@ -88,6 +90,7 @@ const ErrorMessage = styled(Text)`
 
 const logoSource = require("../../assets/resources/instaDaelim_title.png");
 const bgSource = require("../../assets/resources/instaDaelim_background.jpg");
+
 const CreateAccountScreen = () => {
   // State Input (Email, PassWord)
   const [loading, setLoading] = useState(false);
@@ -133,12 +136,11 @@ const CreateAccountScreen = () => {
       // 3-1. 회원가입 성공 => 해당 계정의 닉네임 갱신
       await updateProfile(credential.user, { displayName: nickname });
       // 3-2. 로그인 성공 => Home으로 이동
-      Alert.alert("Login Success");
+      Alert.alert("Create Account Success");
     } catch (error) {
       // 3-2. 로그인 실패 => 실패문구 표시
       // firebase 관련된 로그인 에러만 표시
       if (error instanceof FirebaseError) {
-        console.error("Error", error.code);
         // 직접 작성한 Firebase 에러코드 타입의 값으로 'key'타입으로 형변환
         const errorCode = error.code as keyof FirebaseErrorCodeType;
         // 형변환된 에러코드를 Error state에 할당한다다
@@ -158,11 +160,11 @@ const CreateAccountScreen = () => {
     >
       {/* 키패드가 나타난 경우, 입력창 이외에 화면을 터치했을 때 키패드를 다시 가린다 */}
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ImgContainer source={bgSource} resizeMode="cover">
+        <ImgContainer source={bgSource}>
           <AccountBox>
             {/* 앱 로고 */}
             <Logo source={logoSource} />
-            <Title>Create account for using our daeliminsta app</Title>
+            <Title>Please Create account for using our daeliminsta app</Title>
             {/* 유저 Email & PW 입력공간 */}
             <InputField>
               <UserName
@@ -202,7 +204,7 @@ const CreateAccountScreen = () => {
               {/* 뒤로가기 버튼  */}
               <CreateBtn
                 onPress={navi.goBack}
-                style={{ backgroundColor: "#dadada" }}
+                style={{ backgroundColor: "#bee0f3" }}
               >
                 <CreateBtnTitle style={{ color: "#6ab1da" }}>
                   go back
@@ -217,7 +219,7 @@ const CreateAccountScreen = () => {
             )}
             {/* 회원가입 버튼  */}
             <Footer>
-              <FooterText>Powerd by repiica</FooterText>
+              <FooterText>Powerd by REPiiCA</FooterText>
             </Footer>
           </AccountBox>
         </ImgContainer>
