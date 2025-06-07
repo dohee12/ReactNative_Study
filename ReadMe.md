@@ -39,3 +39,11 @@ https://icons.expo.com
    }
    }
    }
+
+# Expo app build
+
+1. npm install -g eas-cli // 빌드 환경 셋업 설치
+2. eas login // expo 로그인
+3. eas build:configure // 빌드를 하기 위한 파일 생성
+4. eas build -p android --profile preview // 안드로이드 빌드
+5. eas build -p ios --profile preview // iOS 빌드
